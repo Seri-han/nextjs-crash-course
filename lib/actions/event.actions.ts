@@ -2,14 +2,17 @@
 
 import Event from '@/database/event.model';
 import connectDB from "@/lib/mongodb";
+import seedEvents from '@/lib/seed-events';
 
 export const getAllEvents = async () => {
     try {
         await connectDB();
 
-        return await Event.find().sort({ createdAt: -1 }).lean();
+        const events = await Event.find().sort({ createdAt: -1 }).lean();
+
+        return events.length > 0 ? events : seedEvents;
     } catch {
-        return [];
+        return seedEvents;
     }
 }
 
