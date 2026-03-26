@@ -3,6 +3,7 @@ import { v2 as cloudinary } from 'cloudinary';
 
 import connectDB from "@/lib/mongodb";
 import Event from '@/database/event.model';
+import { getAllEvents } from '@/lib/actions/event.actions';
 import { getPostHogClient } from "@/lib/posthog-server";
 
 export async function POST(req: NextRequest) {
@@ -77,9 +78,7 @@ export async function POST(req: NextRequest) {
 
 export async function GET() {
     try {
-        await connectDB();
-
-        const events = await Event.find().sort({ createdAt: -1 });
+        const events = await getAllEvents();
 
         return NextResponse.json({ message: 'Events fetched successfully', events }, { status: 200 });
     } catch (e) {
