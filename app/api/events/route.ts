@@ -3,6 +3,7 @@ import { v2 as cloudinary } from 'cloudinary';
 
 import connectDB from "@/lib/mongodb";
 import Event from '@/database/event.model';
+import { getPostHogClient } from "@/lib/posthog-server";
 
 export async function POST(req: NextRequest) {
     try {
@@ -44,9 +45,32 @@ export async function POST(req: NextRequest) {
             agenda: agenda,
         });
 
+        const posthog = getPostHogClient();
+        posthog.capture({
+            distinctId: 'server',
+            event: 'event_created',
+            properties: {
+                title: createdEvent.title,
+                slug: createdEvent.slug,
+                location: createdEvent.location,
+            },
+        });
+        await posthog.shutdown();
+
         return NextResponse.json({ message: 'Event created successfully', event: createdEvent }, { status: 201 });
     } catch (e) {
         console.error(e);
+
+        const posthog = getPostHogClient();
+        posthog.capture({
+            distinctId: 'server',
+            event: 'event_creation_failed',
+            properties: {
+                error: e instanceof Error ? e.message : 'Unknown',
+            },
+        });
+        await posthog.shutdown();
+
         return NextResponse.json({ message: 'Event Creation Failed', error: e instanceof Error ? e.message : 'Unknown'}, { status: 500 })
     }
 }
