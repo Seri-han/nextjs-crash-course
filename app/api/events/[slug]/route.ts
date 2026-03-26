@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-import connectDB from '@/lib/mongodb';
-import Event, { IEvent } from '@/database/event.model';
+import { getEventBySlug } from '@/lib/actions/event.actions';
 
 // Define route params type for type safety
 type RouteParams = {
@@ -19,9 +18,6 @@ export async function GET(
   { params }: RouteParams
 ): Promise<NextResponse> {
   try {
-    // Connect to database
-    await connectDB();
-
     // Await and extract slug from params
     const { slug } = await params;
 
@@ -36,8 +32,7 @@ export async function GET(
     // Sanitize slug (remove any potential malicious input)
     const sanitizedSlug = slug.trim().toLowerCase();
 
-    // Query events by slug
-    const event = await Event.findOne({ slug: sanitizedSlug }).lean();
+    const event = await getEventBySlug(sanitizedSlug);
 
     // Handle events not found
     if (!event) {
@@ -60,14 +55,6 @@ export async function GET(
 
     // Handle specific error types
     if (error instanceof Error) {
-      // Handle database connection errors
-      if (error.message.includes('MONGODB_URI')) {
-        return NextResponse.json(
-          { message: 'Database configuration error' },
-          { status: 500 }
-        );
-      }
-
       // Return generic error with error message
       return NextResponse.json(
         { message: 'Failed to fetch events', error: error.message },
