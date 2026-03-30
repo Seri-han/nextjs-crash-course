@@ -8,13 +8,23 @@ function sharesTag(sourceTags: string[], candidateTags: string[]) {
     return sourceTags.some((tag) => candidateTags.includes(tag));
 }
 
+async function ensureSeedEvents() {
+    const existingEvents = await Event.find().sort({ createdAt: -1 }).lean();
+
+    if (existingEvents.length > 0) {
+        return existingEvents;
+    }
+
+    await Event.create(seedEvents);
+
+    return await Event.find().sort({ createdAt: -1 }).lean();
+}
+
 export const getAllEvents = async () => {
     try {
         await connectDB();
 
-        const events = await Event.find().sort({ createdAt: -1 }).lean();
-
-        return events.length > 0 ? events : seedEvents;
+        return await ensureSeedEvents();
     } catch {
         return seedEvents;
     }
@@ -25,6 +35,8 @@ export const getEventBySlug = async (slug: string) => {
 
     try {
         await connectDB();
+
+        await ensureSeedEvents();
 
         const event = await Event.findOne({ slug: normalizedSlug }).lean();
 
@@ -43,6 +55,7 @@ export const getSimilarEventsBySlug = async (slug: string) => {
 
     try {
         await connectDB();
+        await ensureSeedEvents();
         const event = await Event.findOne({ slug: normalizedSlug });
 
         if (!event) {
